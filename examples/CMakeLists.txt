@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.24)
-project(cpp-utils-lib-examples)
+project(cpp-core-utils-examples)
 
 message(STATUS "Building examples")
 set(EXAMPLES 
@@ -16,10 +16,15 @@ foreach (subdir ${EXAMPLES})
     if (IS_DIRECTORY ${SUBDIR_PATH} AND EXISTS ${MAIN_FILE})
 
         add_executable(${subdir} ${MAIN_FILE})
-        target_link_libraries(${subdir} PRIVATE cpp-utils-lib)
+        target_link_libraries(${subdir} PRIVATE cpp-core-utils)
 
         if(USE_OPENMP AND TARGET OpenMP::OpenMP_CXX)
             target_link_libraries(${subdir} PRIVATE OpenMP::OpenMP_CXX)
+        endif()
+
+
+        if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+            target_link_libraries(${subdir} PRIVATE stdc++exp)
         endif()
 
     else()

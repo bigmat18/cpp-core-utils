@@ -18,8 +18,8 @@ This is a header-only library, so no compilation is required for the core utilit
 
 1. Clone the repository:
 ```
-git clone https://github.com/bigmat18/cpp-utils-lib.git
-cd cpp-utils-lib
+git clone https://github.com/bigmat18/cpp-core-utils.git
+cd cpp-core-utils
 ```
 2. Create a build directory:
 ```
