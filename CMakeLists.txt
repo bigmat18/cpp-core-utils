@@ -1,19 +1,18 @@
-cmake_minimum_required(VERSION 3.10)
-project(cpp-core-utils LANGUAGES CXX VERSION 1.0.0)
+cmake_minimum_required(VERSION 3.28)
+project(cpp-core-utils LANGUAGES CXX VERSION 2.0.0)
 
 include(CMakePackageConfigHelpers)
 include(GNUInstallDirs)
 
-set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD 26)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+set(CMAKE_CXX_STANDARD_INCLUDE_DIRECTORIES ${CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES})
 
 set(EXAMPLES_DIR ${CMAKE_CURRENT_SOURCE_DIR}/examples)
-set(UTILS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/utils)
+set(UTILS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/core-utils)
 
 option(CPPUTILS_BUILD_EXAMPLES "Build examples" ON)
-option(CPPUTILS_USE_OPENMP "Enable OpenMP" OFF)
-option(CPPUTILS_ENABLE_WARNINGS "Enable recommended warnings" OFF)
 option(CPPUTILS_ENABLE_PROFILING "Profiling utils" ON)
 option(CPPUTILS_ENABLE_ASSERT "Enable assertions" ON)
 option(CPPUTILS_ENABLE_DEBUG "Enable debug utilities" ON)
@@ -24,26 +23,9 @@ target_include_directories(cpp-core-utils INTERFACE
     $<BUILD_INTERFACE:${UTILS_DIR}>
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
-
-if(CPPUTILS_USE_OPENMP)
-    find_package(OpenMP QUIET)
-    if(OpenMP_CXX_FOUND)
-        target_link_libraries(cpp-core-utils INTERFACE OpenMP::OpenMP_CXX)
-        target_compile_definitions(cpp-core-utils INTERFACE USE_OPENMP)
-    endif()
-endif()
-
-if(CPPUTILS_ENABLE_WARNINGS)
-    target_compile_options(cpp-core-utils INTERFACE 
-        -Wall 
-        -Wextra 
-        -Wpedantic 
-        -Wcpp 
-        $<$<CXX_COMPILER_ID:Clang>:-Weverything -Wno-c++98-compat>
-        $<$<CXX_COMPILER_ID:GNU>:-Wshadow=local -Wformat=2>
-        $<$<CXX_COMPILER_ID:MSVC>:/W4 /wd4996>
-    )
-endif()
+target_compile_options(cpp-core-utils INTERFACE
+     $<$<CXX_COMPILER_ID:GNU>:-freflection>
+)
 
 if(CPPUTILS_ENABLE_ASSERT)
     target_compile_definitions(cpp-core-utils INTERFACE ENABLE_ASSERT)
