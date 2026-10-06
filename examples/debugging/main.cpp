@@ -10,7 +10,13 @@ int main() {
     core::debug::breakpoint()
         .print_vars(VAR(a), VAR(b), VAR(c))
         .when(a == 5)
-        .msg("Debugging first try");
+        .msg("Debugging in release");
+
+    core::debug::breakpoint()
+        .print_vars(VAR(a), VAR(b), VAR(c))
+        .when(a == 5)
+        .msg("Debugging in debug")
+        .if_debug();
 
     return 0;
 }
