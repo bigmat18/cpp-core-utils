@@ -2,9 +2,11 @@
 
 #include <format>
 #include <print>
+#include <meta>
 #include <source_location>
 #include <string_view>
 #include <chrono>
+#include <utility>
 
 namespace core::logging {
 
@@ -24,69 +26,100 @@ namespace core::logging {
 
 namespace detail {
 
+template<typename T>
+concept Loggable = requires(T val)
+{
+    val.first;
+    val.second;
+} && std::convertible_to<decltype(std::declval<T>().first), std::string_view>
+  && std::formattable<std::remove_cvref_t<decltype(std::declval<T>().second)>, char>;
+
+constexpr std::string_view extract_file_name(std::string_view path) noexcept {
+    const auto pos = path.find_last_of("/\\");
+    return (pos == std::string_view::npos) ? path : path.substr(pos + 1);
+}
+
+template<detail::Loggable...Args>
 inline void internal(const std::string_view level, 
         const std::string_view color, 
         const std::string_view message, 
         const std::source_location& location,
-        std::format_args args)
+        Args&&... args)
 {
-    auto now = std::chrono::system_clock::now();
-    auto in_time_t = std::chrono::system_clock::to_time_t(now);
+    std::string_view file = extract_file_name(location.file_name());
+    auto in_time_t = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
     char timestamp_buffer[64];
     std::strftime(timestamp_buffer, sizeof(timestamp_buffer),
             "%Y-%m-%d %X", std::localtime(&in_time_t));
 
-    std::string full_message = std::vformat(message, args);
-    std::println("{}[{}][{}:{}:{}][{}] {}{}", 
-            color, timestamp_buffer, location.file_name(), location.line(), 
-            location.column(), level, full_message, RESET);
+
+
+    if constexpr (sizeof...(Args) == 0) {
+        std::println("{}[{}][{}][{}:{}:{}] {}{}", 
+                color, level, timestamp_buffer, file, location.line(), 
+                location.column(), message, RESET);
+    } else {
+        std::string vars_str = "";
+        template for (const auto&& [name, val] : std::forward_as_tuple(std::forward<Args>(args)...)) {
+            vars_str += std::format("{}={} ", name, val);
+        }
+        std::println("{}[{}][{}][{}:{}:{}] {} | {}{}", 
+                color, level, timestamp_buffer, file, location.line(), 
+                location.column(), message, vars_str, RESET);
+    }
 }
 
 } // detail
 
 
-template<typename...Args>
+template<detail::Loggable...Args>
 struct error {
     inline error(const std::string_view message, Args&&...args,
                  const std::source_location location = std::source_location::current()) {
-        detail::internal("ERROR", RED, message, location, std::make_format_args(args...));
+        detail::internal("ERROR", RED, message, location, std::forward<Args>(args)...);
     }
 };
 
-template<typename... Args>
+template<detail::Loggable... Args>
 error(std::string_view, Args&&...) -> error<Args...>;
 
-template<typename...Args>
+
+template<detail::Loggable...Args>
 struct info {
     inline info(const std::string_view message, Args&&...args,
                    const std::source_location location = std::source_location::current()) {
-        detail::internal("INFO", GREEN, message, location, std::make_format_args(args...));
+        detail::internal("INFO", GREEN, message, location, std::forward<Args>(args)...);
     }
 };
 
-template<typename... Args>
+template<detail::Loggable... Args>
 info(std::string_view, Args&&...) -> info<Args...>;
 
-template<typename...Args>
+template<detail::Loggable...Args>
 struct warn {
     inline warn(const std::string_view message, Args&&...args,
                    const std::source_location location = std::source_location::current()) {
-        detail::internal("WARN", YELLOW, message, location, std::make_format_args(args...));
+        detail::internal("WARN", YELLOW, message, location, std::forward<Args>(args)...);
     }
 };
 
-template<typename... Args>
+template<detail::Loggable... Args>
 warn(std::string_view, Args&&...) -> warn<Args...>;
 
-template<typename...Args>
+template<detail::Loggable...Args>
 struct debug {
     inline debug(const std::string_view message, Args&&...args,
                     const std::source_location location = std::source_location::current()) {
-        detail::internal("DEBUG", BLUE, message, location, std::make_format_args(args...));
+#ifndef NDEBUG
+        detail::internal("DEBUG", BLUE, message, location, std::forward<Args>(args)...);
+#endif // NDEBUG
     }
 };
 
-template<typename... Args>
+template<detail::Loggable... Args>
 debug(std::string_view, Args&&...) -> debug<Args...>;
+
+
+#define VAR(var) (std::pair<std::string_view, const decltype(var)&>{ #var, (var) })
 
 } // core::logging
