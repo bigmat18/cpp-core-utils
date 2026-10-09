@@ -52,8 +52,6 @@ inline void internal(const std::string_view level,
     std::strftime(timestamp_buffer, sizeof(timestamp_buffer),
             "%Y-%m-%d %X", std::localtime(&in_time_t));
 
-
-
     if constexpr (sizeof...(Args) == 0) {
         std::println("{}[{}][{}][{}:{}:{}] {}{}", 
                 color, level, timestamp_buffer, file, location.line(), 
