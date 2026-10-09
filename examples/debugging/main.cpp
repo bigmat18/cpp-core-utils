@@ -7,12 +7,12 @@ int main() {
     float c = 10.3;
     std::vector<int> b = {10};
 
-    core::debug::breakpoint()
+    core::breakpoint()
         .print_vars(VAR(a), VAR(b), VAR(c))
         .when(a == 5)
         .msg("Debugging in release");
 
-    core::debug::breakpoint()
+    core::breakpoint()
         .print_vars(VAR(a), VAR(b), VAR(c))
         .when(a == 5)
         .msg("Debugging in debug")

@@ -1,45 +1,23 @@
 #pragma once
 
-#include <format>
 #include <print>
 #include <meta>
 #include <source_location>
 #include <string_view>
 #include <chrono>
-#include <utility>
+
+#include <common.hpp>
 
 namespace core::logging {
 
-#if !defined (_WIN32)
-    #define RED     "\x1b[31m"
-    #define YELLOW  "\x1b[33m"
-    #define GREEN   "\x1b[32m"
-    #define BLUE    "\x1b[36m"
-    #define RESET   "\x1b[0m"
-#else
-    #define RED     ""
-    #define YELLOW  ""
-    #define GREEN   ""
-    #define BLUE    ""
-    #define RESET   ""
-#endif
-
 namespace detail {
-
-template<typename T>
-concept Loggable = requires(T val)
-{
-    val.first;
-    val.second;
-} && std::convertible_to<decltype(std::declval<T>().first), std::string_view>
-  && std::formattable<std::remove_cvref_t<decltype(std::declval<T>().second)>, char>;
 
 constexpr std::string_view extract_file_name(std::string_view path) noexcept {
     const auto pos = path.find_last_of("/\\");
     return (pos == std::string_view::npos) ? path : path.substr(pos + 1);
 }
 
-template<detail::Loggable...Args>
+template<core::detail::Printable...Args>
 inline void internal(const std::string_view level, 
         const std::string_view color, 
         const std::string_view message, 
@@ -53,71 +31,69 @@ inline void internal(const std::string_view level,
             "%Y-%m-%d %X", std::localtime(&in_time_t));
 
     if constexpr (sizeof...(Args) == 0) {
-        std::println("{}[{}][{}][{}:{}:{}] {}{}", 
+        std::println("{}[{}][{}][{}:{}:{}] {}" CORE_CLR_RESET, 
                 color, level, timestamp_buffer, file, location.line(), 
-                location.column(), message, RESET);
+                location.column(), message);
     } else {
         std::string vars_str = "";
         template for (const auto&& [name, val] : std::forward_as_tuple(std::forward<Args>(args)...)) {
             vars_str += std::format("{}={} ", name, val);
         }
-        std::println("{}[{}][{}][{}:{}:{}] {} | {}{}", 
+        std::println("{}[{}][{}][{}:{}:{}] {} | {}" CORE_CLR_RESET, 
                 color, level, timestamp_buffer, file, location.line(), 
-                location.column(), message, vars_str, RESET);
+                location.column(), message, vars_str);
     }
 }
 
 } // detail
 
 
-template<detail::Loggable...Args>
+template<core::detail::Printable...Args>
 struct error {
     inline error(const std::string_view message, Args&&...args,
                  const std::source_location location = std::source_location::current()) {
-        detail::internal("ERROR", RED, message, location, std::forward<Args>(args)...);
+        detail::internal("ERROR", CORE_CLR_RED, message, location, std::forward<Args>(args)...);
     }
 };
 
-template<detail::Loggable... Args>
+template<core::detail::Printable... Args>
 error(std::string_view, Args&&...) -> error<Args...>;
 
 
-template<detail::Loggable...Args>
+template<core::detail::Printable...Args>
 struct info {
     inline info(const std::string_view message, Args&&...args,
                    const std::source_location location = std::source_location::current()) {
-        detail::internal("INFO", GREEN, message, location, std::forward<Args>(args)...);
+        detail::internal("INFO", CORE_CLR_GREEN, message, location, std::forward<Args>(args)...);
     }
 };
 
-template<detail::Loggable... Args>
+template<core::detail::Printable... Args>
 info(std::string_view, Args&&...) -> info<Args...>;
 
-template<detail::Loggable...Args>
+template<core::detail::Printable...Args>
 struct warn {
     inline warn(const std::string_view message, Args&&...args,
                    const std::source_location location = std::source_location::current()) {
-        detail::internal("WARN", YELLOW, message, location, std::forward<Args>(args)...);
+        detail::internal("WARN", CORE_CLR_YELLOW, message, location, std::forward<Args>(args)...);
     }
 };
 
-template<detail::Loggable... Args>
+template<core::detail::Printable... Args>
 warn(std::string_view, Args&&...) -> warn<Args...>;
 
-template<detail::Loggable...Args>
+template<core::detail::Printable...Args>
 struct debug {
     inline debug(const std::string_view message, Args&&...args,
                     const std::source_location location = std::source_location::current()) {
 #ifndef NDEBUG
-        detail::internal("DEBUG", BLUE, message, location, std::forward<Args>(args)...);
+        detail::internal("DEBUG", CORE_CLR_CYAN, message, location, std::forward<Args>(args)...);
 #endif // NDEBUG
     }
 };
 
-template<detail::Loggable... Args>
+template<core::detail::Printable... Args>
 debug(std::string_view, Args&&...) -> debug<Args...>;
 
-
-#define VAR(var) (std::pair<std::string_view, const decltype(var)&>{ #var, (var) })
 
 } // core::logging

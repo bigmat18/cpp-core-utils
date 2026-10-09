@@ -2,7 +2,7 @@
 #include <print>
 #include <string>
 
-using namespace core::errors;
+using namespace core;
 
 Result<int> parse_port(int raw_port) {
     REQUIRE(raw_port > 0 && raw_port <= 65535, 

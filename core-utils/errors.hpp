@@ -3,9 +3,10 @@
 #include <stacktrace>
 #include <string>
 #include <expected>
+
 #include <logging.hpp>
 
-namespace core::errors {
+namespace core {
 
 class Error {
 
@@ -38,7 +39,7 @@ using Result = std::expected<T, Error>;
         ::core::logging::error(                                                \
             (msg) __VA_OPT__(,) __VA_ARGS__                                    \
         );                                                                     \
-        return ::core::errors::Error::create((msg), (code));                   \
+        return ::core::Error::create((msg), (code));                           \
     } while (0)
 
 #define REQUIRE(expr, msg, code, ...)                                          \
@@ -65,18 +66,22 @@ using Result = std::expected<T, Error>;
             const auto _loc = std::source_location::current();                 \
                                                                                \
             std::println(stderr,                                               \
-                "\n\033[1;31m[ UNWRAP FAILED ]\033[0m\n"                       \
-                "\033[1;37mExpression :\033[0m \033[33m{}\033[0m\n"            \
-                "\033[1;37mError Code :\033[0m \033[31m{}\033[0m\n"            \
-                "\033[1;37mReason     :\033[0m {}\n"                           \
-                "\033[1;34m--- Call Stack ---\033[0m",                         \
+                "\n" CORE_CLR_BOLD_RED   "[ UNWRAP FAILED ]" CORE_CLR_RESET "\n" \
+                "  " CORE_CLR_BOLD_CYAN  "--- Information ---" CORE_CLR_RESET "\n" \
+                "    " CORE_CLR_BOLD_WHITE "Expression : " CORE_CLR_RESET CORE_CLR_YELLOW "{}" CORE_CLR_RESET "\n" \
+                "    " CORE_CLR_BOLD_WHITE "Error Code : " CORE_CLR_RESET CORE_CLR_RED "{}" CORE_CLR_RESET "\n" \
+                "    " CORE_CLR_BOLD_WHITE "Location   : " CORE_CLR_RESET "{}:{}:{} in {}\n" \
+                "    " CORE_CLR_BOLD_WHITE "Reason     : " CORE_CLR_RESET "{}\n\n" \
+                "  " CORE_CLR_BOLD_CYAN  "--- Call Stack ---" CORE_CLR_RESET,  \
                 #expr,                                                         \
                 _err.error_code,                                               \
+                _loc.file_name(), _loc.line(), _loc.column(),                  \
+                _loc.function_name(),                                          \
                 _err.message                                                   \
             );                                                                 \
                                                                                \
             for (std::size_t _i = 0; _i < _err.trace.size(); ++_i) {           \
-                std::println(stderr, "  \033[90m[{:>2}]\033[0m {}",            \
+                std::println(stderr, "    " CORE_CLR_GRAY "[{:>2}]" CORE_CLR_RESET " {}", \
                     _i, _err.trace[_i]);                                       \
             }                                                                  \
                                                                                \
