@@ -13,34 +13,19 @@ set(EXAMPLES_DIR ${CMAKE_CURRENT_SOURCE_DIR}/examples)
 set(UTILS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/core-utils)
 
 option(CPPUTILS_BUILD_EXAMPLES "Build examples" ON)
-option(CPPUTILS_ENABLE_PROFILING "Profiling utils" ON)
-option(CPPUTILS_ENABLE_ASSERT "Enable assertions" ON)
-option(CPPUTILS_ENABLE_DEBUG "Enable debug utilities" ON)
-option(CPPUTILS_ENABLE_LOGGING "Enable logging" ON)
 
 add_library(cpp-core-utils INTERFACE)
 target_include_directories(cpp-core-utils INTERFACE 
     $<BUILD_INTERFACE:${UTILS_DIR}>
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
+
 target_compile_options(cpp-core-utils INTERFACE
      $<$<CXX_COMPILER_ID:GNU>:-freflection>
 )
 
-if(CPPUTILS_ENABLE_ASSERT)
-    target_compile_definitions(cpp-core-utils INTERFACE ENABLE_ASSERT)
-endif()
-
-if(CPPUTILS_ENABLE_DEBUG)
-    target_compile_definitions(cpp-core-utils INTERFACE ENABLE_DEBUG)
-endif()
-
-if(CPPUTILS_ENABLE_LOGGING)
-    target_compile_definitions(cpp-core-utils INTERFACE ENABLE_LOGGING)
-endif()
-
-if(CPPUTILS_ENABLE_PROFILING)
-    target_compile_definitions(cpp-core-utils INTERFACE ENABLE_PROFILING)
+if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    target_link_libraries(cpp-core-utils INTERFACE stdc++exp)
 endif()
 
 install(TARGETS cpp-core-utils
