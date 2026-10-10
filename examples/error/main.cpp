@@ -1,4 +1,4 @@
-#include <errors.hpp>
+#include <error.hpp>
 #include <print>
 #include <string>
 
