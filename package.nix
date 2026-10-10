@@ -14,12 +14,17 @@ stdenv.mkDerivation {
     ninja
   ];
 
-  src = ./.;
+  src = lib.cleanSourceWith {
+    src = ./.;
+    filter = path: type:
+      let base = baseNameOf (toString path);
+      in !(base == "build" || base == ".cache");
+  };
 
   buildInputs = [ ];
 
   cmakeFlags = [
-    "-DCPPUTILS_BUILD_EXAMPLES=OFF"
+    "-DCORE_UTILS_BUILD_EXAMPLES=OFF"
   ];
 
   meta = with lib; {

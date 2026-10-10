@@ -26,8 +26,14 @@
             inherit system;
             overlays = [ ];
           };
+          cpp-core-utils = pkgs.callPackage ./package.nix { };
         in
         {
+          packages = {
+            default = cpp-core-utils;
+            cpp-core-utils = cpp-core-utils;
+          };
+
           devShells.default = pkgs.mkShell rec {
             name = "cpp-core-utils";
 
