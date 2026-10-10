@@ -7,19 +7,24 @@
 
 stdenv.mkDerivation {
   pname = "cpp-core-utils";
-  version = "1.0.0";
+  version = "2.0.0";
 
   nativeBuildInputs = [
     cmake
     ninja
   ];
 
-  src = ./.;
+  src = lib.cleanSourceWith {
+    src = ./.;
+    filter = path: type:
+      let base = baseNameOf (toString path);
+      in !(base == "build" || base == ".cache");
+  };
 
   buildInputs = [ ];
 
   cmakeFlags = [
-    "-DCPPUTILS_BUILD_EXAMPLES=OFF"
+    "-DCORE_UTILS_BUILD_EXAMPLES=OFF"
   ];
 
   meta = with lib; {

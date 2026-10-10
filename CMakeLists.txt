@@ -1,75 +1,59 @@
-cmake_minimum_required(VERSION 3.10)
-project(cpp-core-utils LANGUAGES CXX VERSION 1.0.0)
+cmake_minimum_required(VERSION 3.28)
+project(cpp-core-utils LANGUAGES CXX VERSION 2.0.0)
 
 include(CMakePackageConfigHelpers)
 include(GNUInstallDirs)
 
-set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD 26)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+set(CMAKE_CXX_STANDARD_INCLUDE_DIRECTORIES ${CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES})
 
 set(EXAMPLES_DIR ${CMAKE_CURRENT_SOURCE_DIR}/examples)
-set(UTILS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/utils)
+set(UTILS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/core-utils)
 
-option(CPPUTILS_BUILD_EXAMPLES "Build examples" ON)
-option(CPPUTILS_USE_OPENMP "Enable OpenMP" OFF)
-option(CPPUTILS_ENABLE_WARNINGS "Enable recommended warnings" OFF)
-option(CPPUTILS_ENABLE_PROFILING "Profiling utils" ON)
-option(CPPUTILS_ENABLE_ASSERT "Enable assertions" ON)
-option(CPPUTILS_ENABLE_DEBUG "Enable debug utilities" ON)
-option(CPPUTILS_ENABLE_LOGGING "Enable logging" ON)
+option(CORE_UTILS_BUILD_EXAMPLES "Build examples" ON)
+
+set(CORE_UTILS_INCLUDE_NAME "core" CACHE STRING "Subdirectory name for installed headers")
+set(CORE_UTILS_CUSTOM_INSTALL_DIR "" CACHE PATH "Optional custom directory to directly copy header files during install")
+
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/include)
+if(NOT EXISTS ${CMAKE_CURRENT_BINARY_DIR}/include/${CORE_UTILS_INCLUDE_NAME})
+    file(CREATE_LINK ${UTILS_DIR} ${CMAKE_CURRENT_BINARY_DIR}/include/${CORE_UTILS_INCLUDE_NAME} SYMBOLIC)
+endif()
 
 add_library(cpp-core-utils INTERFACE)
 target_include_directories(cpp-core-utils INTERFACE 
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
     $<BUILD_INTERFACE:${UTILS_DIR}>
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/${CORE_UTILS_INCLUDE_NAME}>
 )
 
-if(CPPUTILS_USE_OPENMP)
-    find_package(OpenMP QUIET)
-    if(OpenMP_CXX_FOUND)
-        target_link_libraries(cpp-core-utils INTERFACE OpenMP::OpenMP_CXX)
-        target_compile_definitions(cpp-core-utils INTERFACE USE_OPENMP)
-    endif()
-endif()
+target_compile_options(cpp-core-utils INTERFACE
+     $<$<CXX_COMPILER_ID:GNU>:-freflection>
+)
 
-if(CPPUTILS_ENABLE_WARNINGS)
-    target_compile_options(cpp-core-utils INTERFACE 
-        -Wall 
-        -Wextra 
-        -Wpedantic 
-        -Wcpp 
-        $<$<CXX_COMPILER_ID:Clang>:-Weverything -Wno-c++98-compat>
-        $<$<CXX_COMPILER_ID:GNU>:-Wshadow=local -Wformat=2>
-        $<$<CXX_COMPILER_ID:MSVC>:/W4 /wd4996>
-    )
-endif()
-
-if(CPPUTILS_ENABLE_ASSERT)
-    target_compile_definitions(cpp-core-utils INTERFACE ENABLE_ASSERT)
-endif()
-
-if(CPPUTILS_ENABLE_DEBUG)
-    target_compile_definitions(cpp-core-utils INTERFACE ENABLE_DEBUG)
-endif()
-
-if(CPPUTILS_ENABLE_LOGGING)
-    target_compile_definitions(cpp-core-utils INTERFACE ENABLE_LOGGING)
-endif()
-
-if(CPPUTILS_ENABLE_PROFILING)
-    target_compile_definitions(cpp-core-utils INTERFACE ENABLE_PROFILING)
+if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    target_link_libraries(cpp-core-utils INTERFACE stdc++exp)
 endif()
 
 install(TARGETS cpp-core-utils
     EXPORT cpp-core-utilsTargets
-    INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+    INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR} ${CMAKE_INSTALL_INCLUDEDIR}/${CORE_UTILS_INCLUDE_NAME}
 )
 
 install(DIRECTORY ${UTILS_DIR}/
-    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/utils
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${CORE_UTILS_INCLUDE_NAME}
     FILES_MATCHING PATTERN "*.hpp" PATTERN "*.h"
 )
+
+if(CORE_UTILS_CUSTOM_INSTALL_DIR)
+    install(DIRECTORY ${UTILS_DIR}/
+        DESTINATION ${CORE_UTILS_CUSTOM_INSTALL_DIR}
+        FILES_MATCHING PATTERN "*.hpp" PATTERN "*.h"
+    )
+endif()
 
 install(EXPORT cpp-core-utilsTargets
     FILE cpp-core-utilsTargets.cmake
@@ -94,6 +78,6 @@ install(FILES
     DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/cpp-core-utils
 )
 
-if(CPPUTILS_BUILD_EXAMPLES)
+if(CORE_UTILS_BUILD_EXAMPLES)
     add_subdirectory(${EXAMPLES_DIR})
 endif()
