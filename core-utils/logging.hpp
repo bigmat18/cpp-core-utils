@@ -6,7 +6,7 @@
 #include <string_view>
 #include <chrono>
 
-#include <common.hpp>
+#include "common.hpp"
 
 namespace core::logging {
 
